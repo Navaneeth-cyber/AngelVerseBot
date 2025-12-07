@@ -1,11 +1,14 @@
+import os
 import json
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-BOT_TOKEN = "8381713017:AAESzlPZNzs1PSdkq6awxv12qCGT0VQZDMM"
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8381713017:AAESzlPZNzs1PSdkq6awxv12qCGT0VQZDMM")
 MAIN_CHANNEL = "@AngelVerse_main"
 BACKUP_CHANNEL = "@AngelVerse_backup"
-ADMIN_ID = 8207746599  # <-- Your Telegram user ID
+ADMIN_ID = 8207746599
+
+PORT = int(os.environ.get("PORT", 8443))  # Render provides this
 
 # Load videos JSON
 try:
@@ -26,12 +29,10 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ You are not authorized.")
         return
 
-    # Check if video is attached
     if not update.message.video:
         await update.message.reply_text("⚠️ Please attach a video with this command.\nUsage: /add <anime_name>")
         return
 
-    # Get anime name from caption or command args
     args = []
     if update.message.caption:
         parts = update.message.caption.split()
@@ -44,16 +45,12 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ Please provide anime name. Usage: /add <anime_name>")
         return
 
-    anime_name = "_".join(args).lower()  # e.g. Naruto Ep1 → naruto_ep1
-
-    # Get file_id
+    anime_name = "_".join(args).replace(" ", "_").lower()
     file_id = update.message.video.file_id
 
-    # Save to JSON
     VIDEOS[anime_name] = file_id
     save_videos()
 
-    # Send back the link
     link = f"https://t.me/AngelVerse_bot?start={anime_name}"
     await update.message.reply_text(f"✅ Video saved!\nPost this link in your channel:\n{link}")
 
@@ -66,7 +63,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ Please click the link from the channel to get the anime.")
         return
 
-    anime_id = args[0]  # e.g. naruto_ep1
+    anime_id = args[0]
 
     # Check channel join
     main = await context.bot.get_chat_member(MAIN_CHANNEL, user_id)
@@ -79,18 +76,26 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ You must join BOTH channels to get the anime!")
         return
 
-    # Send the requested video
     file_id = VIDEOS.get(anime_id)
     if file_id:
         await update.message.reply_video(video=file_id)
     else:
         await update.message.reply_text("❌ Anime not found!")
 
-# Handlers
+# Build the app
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 app.add_handler(CommandHandler("add", add))
 app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.VIDEO, add))
 
-# Run the bot
-app.run_polling()
+# Webhook URL
+RENDER_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://your-render-url.onrender.com")
+WEBHOOK_URL = f"{RENDER_URL}/{BOT_TOKEN}"
+
+# Run webhook
+app.run_webhook(
+    listen="0.0.0.0",
+    port=PORT,
+    url_path=BOT_TOKEN,
+    webhook_url=WEBHOOK_URL
+)
