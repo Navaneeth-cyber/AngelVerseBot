@@ -31,11 +31,19 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ Please attach a video with this command.\nUsage: /add <anime_name>")
         return
 
-    # Get anime name
-    args = context.args
+    # Get anime name from caption or command args
+    args = []
+    if update.message.caption:
+        parts = update.message.caption.split()
+        if parts[0].lower() == "/add":
+            args = parts[1:]
+    if not args:
+        args = context.args
+
     if not args:
         await update.message.reply_text("⚠️ Please provide anime name. Usage: /add <anime_name>")
         return
+
     anime_name = "_".join(args).lower()  # e.g. Naruto Ep1 → naruto_ep1
 
     # Get file_id
@@ -84,5 +92,5 @@ app.add_handler(CommandHandler("add", add))
 app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.VIDEO, add))
 
-
+# Run the bot
 app.run_polling()
