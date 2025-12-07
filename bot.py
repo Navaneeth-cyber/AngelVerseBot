@@ -9,7 +9,7 @@ from telegram.ext import (
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8381713017:AAESzlPZNzs1PSdkq6awxv12qCGT0VQZDMM")
 ADMIN_ID = int(os.environ.get("ADMIN_ID", "8207746599"))
 PORT = int(os.environ.get("PORT", 8443))
-RENDER_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://python-poster-bot.onrender.com")
+RENDER_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://angelversebot.onrender.com")
 
 VIDEOS_FILE = "videos.json"
 
@@ -211,3 +211,4 @@ app.run_webhook(
     url_path=WEBHOOK_PATH,
     webhook_url=WEBHOOK_URL
 )
+
