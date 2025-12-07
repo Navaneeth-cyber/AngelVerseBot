@@ -3,7 +3,7 @@ import json
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "YOUR_BOT_TOKEN")
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8381713017:AAESzlPZNzs1PSdkq6awxv12qCGT0VQZDMM")
 MAIN_CHANNEL = "@AngelVerse_main"
 BACKUP_CHANNEL = "@AngelVerse_backup"
 ADMIN_ID = 8207746599
@@ -109,3 +109,4 @@ app.run_webhook(
     url_path=BOT_TOKEN,
     webhook_url=WEBHOOK_URL
 )
+
