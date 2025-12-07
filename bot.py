@@ -89,7 +89,7 @@ app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.VIDEO, add))
 
 # Webhook URL
-RENDER_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://your-render-url.onrender.com")
+RENDER_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://angelversebot.onrender.com")
 WEBHOOK_URL = f"{RENDER_URL}/{BOT_TOKEN}"
 
 # Run webhook
@@ -99,3 +99,4 @@ app.run_webhook(
     url_path=BOT_TOKEN,
     webhook_url=WEBHOOK_URL
 )
+
