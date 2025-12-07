@@ -63,18 +63,21 @@ async def single_video_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     if not update.message.video:
         await update.message.reply_text("⚠️ Please send a valid video.")
         return SINGLE_WAIT_VIDEO
+
     TEMP_DATA["videos"].append(update.message.video.file_id)
-    await update.message.reply_text(f"✅ Video received. Now send the anime name:")
+    await update.message.reply_text("✅ Video received. Now send the anime name:")
     return SINGLE_NAME
 
 async def single_name_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     anime_name = update.message.text.strip().replace(" ", "_").lower()
     TEMP_DATA["name"] = anime_name
+
     VIDEOS[anime_name] = TEMP_DATA["videos"]
     save_videos()
 
     link = f"https://t.me/{context.bot.username}?start={anime_name}"
     await update.message.reply_text(f"✅ Single video uploaded!\nLink: {link}")
+
     TEMP_DATA.clear()
     return ConversationHandler.END
 
@@ -84,6 +87,7 @@ async def multi_video_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         if len(TEMP_DATA["videos"]) == 0:
             await update.message.reply_text("⚠️ No videos uploaded yet.")
             return MULTI_WAIT_VIDEO
+
         await update.message.reply_text(
             f"📊 Total videos uploaded: {len(TEMP_DATA['videos'])}\nConfirm upload? (yes / no)"
         )
@@ -91,39 +95,48 @@ async def multi_video_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     if update.message.video:
         TEMP_DATA["videos"].append(update.message.video.file_id)
-        await update.message.reply_text(f"✅ Video {len(TEMP_DATA['videos'])} received. Send next or type 'done'.")
+        await update.message.reply_text(
+            f"✅ Video {len(TEMP_DATA['videos'])} received. Send next or type 'done'."
+        )
         return MULTI_WAIT_VIDEO
-    else:
-        await update.message.reply_text("⚠️ Send a valid video or type 'done'.")
-        return MULTI_WAIT_VIDEO
+
+    await update.message.reply_text("⚠️ Send a valid video or type 'done'.")
+    return MULTI_WAIT_VIDEO
 
 async def multi_confirm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.lower()
     if text == "yes":
-        await update.message.reply_text("Do you want a single name for all videos or individual names? (all / individual)")
+        await update.message.reply_text(
+            "Do you want a single name for all videos or individual names? (all / individual)"
+        )
         return MULTI_NAME_CHOICE
+
     elif text == "no":
         TEMP_DATA["videos"].clear()
         await update.message.reply_text("❌ Upload cancelled. Send videos again.")
         return MULTI_WAIT_VIDEO
-    else:
-        await update.message.reply_text("⚠️ Reply 'yes' or 'no'.")
-        return MULTI_CONFIRM
+
+    await update.message.reply_text("⚠️ Reply 'yes' or 'no'.")
+    return MULTI_CONFIRM
 
 async def multi_name_choice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     choice = update.message.text.lower()
     TEMP_DATA["names"] = []
+
     if choice == "all":
-        await update.message.reply_text("Enter the anime name for all videos:")
         TEMP_DATA["multi_name_type"] = "all"
+        await update.message.reply_text("Enter the anime name for all videos:")
         return MULTI_NAME_INPUT
+
     elif choice == "individual":
         TEMP_DATA["multi_name_type"] = "individual"
-        await update.message.reply_text(f"Enter names for each video, {len(TEMP_DATA['videos'])} times:")
+        await update.message.reply_text(
+            f"Enter names for each video, {len(TEMP_DATA['videos'])} times:"
+        )
         return MULTI_NAME_INPUT
-    else:
-        await update.message.reply_text("⚠️ Reply 'all' or 'individual'.")
-        return MULTI_NAME_CHOICE
+
+    await update.message.reply_text("⚠️ Reply 'all' or 'individual'.")
+    return MULTI_NAME_CHOICE
 
 async def multi_name_input_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     name = update.message.text.strip().replace(" ", "_").lower()
@@ -132,23 +145,34 @@ async def multi_name_input_handler(update: Update, context: ContextTypes.DEFAULT
     if TEMP_DATA["multi_name_type"] == "all":
         VIDEOS[name] = TEMP_DATA["videos"]
         save_videos()
+
         link = f"https://t.me/{context.bot.username}?start={name}"
         await update.message.reply_text(f"✅ Multi-video upload done!\nLink: {link}")
+
         TEMP_DATA.clear()
         return ConversationHandler.END
-    else:  # individual
-        if len(TEMP_DATA["names"]) < len(TEMP_DATA["videos"]):
-            await update.message.reply_text(f"Enter name for video {len(TEMP_DATA['names']) + 1}:")
-            return MULTI_NAME_INPUT
-        else:
-            # Save all
-            for file_id, anime_name in zip(TEMP_DATA["videos"], TEMP_DATA["names"]):
-                VIDEOS[anime_name] = [file_id]
-            save_videos()
-            links = [f"https://t.me/{context.bot.username}?start={n}" for n in TEMP_DATA["names"]]
-            await update.message.reply_text(f"✅ Multi-video upload done!\nLinks:\n" + "\n".join(links))
-            TEMP_DATA.clear()
-            return ConversationHandler.END
+
+    # Individual names
+    if len(TEMP_DATA["names"]) < len(TEMP_DATA["videos"]):
+        await update.message.reply_text(
+            f"Enter name for video {len(TEMP_DATA['names']) + 1}:"
+        )
+        return MULTI_NAME_INPUT
+
+    # Save all individual videos
+    for file_id, anime_name in zip(TEMP_DATA["videos"], TEMP_DATA["names"]):
+        VIDEOS[anime_name] = [file_id]
+
+    save_videos()
+
+    links = [
+        f"https://t.me/{context.bot.username}?start={n}"
+        for n in TEMP_DATA["names"]
+    ]
+    await update.message.reply_text("✅ Multi-video upload done!\n" + "\n".join(links))
+
+    TEMP_DATA.clear()
+    return ConversationHandler.END
 
 # ---------- Cancel ----------
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -165,7 +189,9 @@ conv_handler = ConversationHandler(
         CHOICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, choice_handler)],
         SINGLE_WAIT_VIDEO: [MessageHandler(filters.VIDEO, single_video_handler)],
         SINGLE_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, single_name_handler)],
-        MULTI_WAIT_VIDEO: [MessageHandler(filters.VIDEO | (filters.TEXT & ~filters.COMMAND), multi_video_handler)],
+        MULTI_WAIT_VIDEO: [
+            MessageHandler(filters.VIDEO | (filters.TEXT & ~filters.COMMAND), multi_video_handler)
+        ],
         MULTI_CONFIRM: [MessageHandler(filters.TEXT & ~filters.COMMAND, multi_confirm_handler)],
         MULTI_NAME_CHOICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, multi_name_choice_handler)],
         MULTI_NAME_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, multi_name_input_handler)]
@@ -175,12 +201,13 @@ conv_handler = ConversationHandler(
 
 app.add_handler(conv_handler)
 
-# ---------------- Webhook ---------------- #
-WEBHOOK_URL = f"{RENDER_URL}/{BOT_TOKEN}"
+# ---------------- Webhook (CORRECTED) ---------------- #
+WEBHOOK_PATH = f"webhook/{BOT_TOKEN}"
+WEBHOOK_URL = f"{RENDER_URL}/{WEBHOOK_PATH}"
 
 app.run_webhook(
     listen="0.0.0.0",
     port=PORT,
-    url_path=BOT_TOKEN,
+    url_path=WEBHOOK_PATH,
     webhook_url=WEBHOOK_URL
 )
